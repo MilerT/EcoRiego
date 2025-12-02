@@ -14,6 +14,11 @@ import com.example.riegosostenible.network.RegisterRequest
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import com.google.gson.Gson
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class LoginActivity : AppCompatActivity() {
 

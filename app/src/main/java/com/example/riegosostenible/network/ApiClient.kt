@@ -1,32 +1,48 @@
 package com.example.riegosostenible.network
 
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
+    // URL base de tu API. ¡Asegúrate de que la IP sea la correcta para tu red!
+    // Si usas un emulador de Android, usa 10.0.2.2 para referirte al 'localhost' de tu PC.
+    private const val BASE_URL = "http://192.168.0.21:8080/"
 
-    // =================================================================
-    // ¡¡¡CAMBIA ESTA IP!!! (Usa tu IP local, no localhost)
-    // Ejemplo: "http://192.168.1.10:8080/"
-    // ¡¡¡ASEGÚRATE DE QUE LA BARRA / ESTÉ AL FINAL!!!
-    // =================================================================
-    private const val BASE_URL = "http://192.168.20.119:8080/"
+    // --- SOLUCIÓN AL ERROR ---
+    // Hacemos 'gson' una propiedad PÚBLICA usando 'val'.
+    // Ahora será accesible desde cualquier parte de la app (ej: LoginActivity).
+    // 'by lazy' asegura que se cree una sola vez, cuando se usa por primera vez.
+    val gson: Gson by lazy {
+        Gson()
+    }
 
-    // =================================================================
-    // ¡¡AQUÍ ESTÁ LA LÍNEA QUE FALTABA!!
-    // Hacemos pública la herramienta "gson" para que LoginActivity pueda usarla
-    // =================================================================
-    val gson: Gson = GsonBuilder().create()
+    // (Recomendado) Interceptor para ver las peticiones a la API en el Logcat.
+    // Esto es muy útil para depurar y ver qué envía y recibe tu app.
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
 
-    // El cliente Retrofit
-    private val retrofit: Retrofit = Retrofit.Builder() 
-        .baseUrl(BASE_URL)
-        // Le decimos a Retrofit que use nuestra variable gson
-        .addConverterFactory(GsonConverterFactory.create(gson))
-        .build()
+    // Cliente OkHttp que usa el interceptor
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .build()
+    }
 
-    // La implementación de nuestra interfaz ApiService
-    val apiService: ApiService = retrofit.create(ApiService::class.java)
+    // Instancia de Retrofit configurada para usar nuestra instancia de Gson y el logger
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient) // Usamos el cliente con el logger
+            .addConverterFactory(GsonConverterFactory.create(gson)) // Usamos nuestra instancia de gson
+            .build()
+    }
+
+    // El servicio de la API que usarán tus Activities, también con inicialización 'lazy'
+    val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
 }
