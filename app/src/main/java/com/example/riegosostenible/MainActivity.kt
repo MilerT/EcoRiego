@@ -1,12 +1,17 @@
 package com.example.riegosostenible
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.riegosostenible.databinding.ActivityMainBinding
@@ -23,16 +28,22 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import android.Manifest
+import android.content.pm.PackageManager
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val apiService = ApiClient.apiService
-
+    companion object {
+        private const val REQUEST_BLUETOOTH_PERMISSIONS = 1
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        // --- Lógica movida a su lugar correcto ---
+        pedirPermisosBluetooth() // Pedimos permisos al crear la actividad
         // --- Configuración de Botones ---
         setupButtons()
 
@@ -42,6 +53,67 @@ class MainActivity : AppCompatActivity() {
         // --- Cargar Datos del Gráfico desde la API ---
         loadChartData()
     }
+
+
+
+
+
+    private val bluetoothAdapter: BluetoothAdapter? by lazy {
+        (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
+    }
+
+    private var dispositivoEncontrado: BluetoothDevice? = null
+    private fun pedirPermisosBluetooth() {
+        // Primero, definimos qué permisos necesitamos según la versión de Android
+        val permisosNecesarios = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT
+            )
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+        // Verificamos si ya tenemos los permisos
+        val permisosFaltantes = permisosNecesarios.filter {
+            ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        // Si faltan permisos, los pedimos al usuario
+        if (permisosFaltantes.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this,
+                permisosFaltantes.toTypedArray(),
+                REQUEST_BLUETOOTH_PERMISSIONS
+            )
+        } else {
+            // Si ya tenemos los permisos, podríamos iniciar la búsqueda aquí si quisiéramos
+            Log.d("Bluetooth", "Los permisos de Bluetooth ya están concedidos.")
+        }
+    }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        // Verificamos que la respuesta sea para nuestra solicitud de Bluetooth
+        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS) {
+            // Comprobamos si el usuario concedió todos los permisos solicitados
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                // El usuario aceptó. ¡Ahora sí tienes los permisos!
+                showToast("Permisos de Bluetooth concedidos.")
+                // Aquí es un buen lugar para iniciar automáticamente el escaneo si quieres
+                // Ejemplo: iniciarEscaneoBluetooth()
+            } else {
+                // El usuario rechazó los permisos.
+                showToast("Los permisos de Bluetooth son necesarios para conectar dispositivos.")
+                // Puedes deshabilitar los botones o mostrar un mensaje más persistente.
+            }
+        }
+    }
+
 
     private fun setupButtons() {
         // Botón Conectar
