@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object ApiClient {
     // URL base de tu API. ¡Asegúrate de que la IP sea la correcta para tu red!
     // Si usas un emulador de Android, usa 10.0.2.2 para referirte al 'localhost' de tu PC.
-    private const val BASE_URL = "http://192.168.0.21:8080/"
+    private const val BASE_URL = "http://172.22.134.221:8080/"
 
     // --- SOLUCIÓN AL ERROR ---
     // Hacemos 'gson' una propiedad PÚBLICA usando 'val'.
